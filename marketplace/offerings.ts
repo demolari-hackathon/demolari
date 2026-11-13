@@ -1,15 +1,10 @@
-import { offering } from "@ambasada/village";
-export const TIERS = { starter: { price: 2, count: 3 }, standard: { price: 5, count: 6 }, deep: { price: 10, count: 10 } } as const;
-export type Tier = keyof typeof TIERS;
-export const BASE_OFFERINGS = Object.entries(TIERS).map(([tier, config]) => offering({
-  name: `assessment_${tier}`, price: config.price, endpoint: `/api/assessment_${tier}`,
-  description: `${config.count}-scenario authorized AI-agent security assessment. Supply intake JSON with agent_id, authorization_reference, configuration {system_prompt,business_rules,tools}. Evidence and Markdown; isolated replica, not a live website audit.`,
-  input: { intake: "object" }, output: { report: "object", markdown: "string" },
-  async: true, max_wait_s: 180, timeout_ms: 10000,
-}));
-export const PARTNER_PRICES = { standard: 4, deep: 8 } as const;
-export default [...BASE_OFFERINGS, ...Object.entries(PARTNER_PRICES).map(([tier, price]) => offering({
-  name: `assessment_${tier}_partner`, price, endpoint: `/api/assessment_${tier}_partner`,
-  description: `Partner ${tier} assessment. Requires an active buyer-specific quote from our sales agent before buying. Same coverage as ${tier}.`,
-  input: { intake: "object" }, output: { report: "object", markdown: "string" }, async: true, max_wait_s: 180, timeout_ms: 10000,
-}))];
+import {offering} from '@ambasada/village';
+import previous from './legacy-offerings.ts';
+export {TIERS,PARTNER_PRICES} from './legacy-offerings.ts';
+export type {Tier} from './legacy-offerings.ts';
+export default [
+  offering({name:'pig_race',price:1,endpoint:'/api/pig_race',description:'Piggy Derby: a funded 1 TON play pass for an animated four-pig race. Choose pig 0–3 (optional). Each has 25% chance; winning return 3.8 TON includes stake. Event play credits, full entry can be lost. Returns a private play URL; payout goes to the buyer wallet.',input:{pig:'integer?'},output:{play_url:'string',round:'object',rules:'string'},timeout_ms:10000}),
+  offering({name:'road_run',price:1,endpoint:'/api/road_run',description:'Hog Crossing: a funded 1 TON interactive play pass. Hop through traffic, 80% survival per hop, or cash out after a safe hop; maximum eight. 95% expected return before rounding, full entry can be lost. Returns a private play URL; winnings go to the buyer wallet. Event play credits.',input:{},output:{play_url:'string',round:'object',rules:'string'},timeout_ms:10000}),
+  offering({name:'mines_game',price:1,endpoint:'/api/mines_game',description:'Truffle Trouble: a funded 1 TON Mines play pass. Three mines among 25 tiles; reveal up to eight safe tiles and cash out. 95% expected return before rounding. A mine loses the entry. Returns a private play URL; winnings go to the buyer wallet. Event play credits.',input:{},output:{play_url:'string',round:'object',rules:'string'},timeout_ms:10000}),
+  ...previous.map(o=>({...o,status:'paused' as const})),
+];

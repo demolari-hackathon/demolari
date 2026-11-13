@@ -2,7 +2,7 @@
   "name": "demolatorii-hackathon",
   "version": "0.1.0",
   "private": true,
-  "description": "An ambasada app: one bare Cloudflare Worker, web/ + api/*.ts fetch handlers.",
+  "description": "Piggy Arcade: event-credit game settlement, durable rounds and marketplace play passes.",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -11,6 +11,8 @@
     "dev": "ambasada dev",
     "preview": "wrangler dev --port 3000",
     "typecheck": "tsc -p .",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:integration": "node tests/arcade.integration.mjs",
     "ambasada": "ambasada"
   },
   "dependencies": {

@@ -1,9 +1,29 @@
 {
   "model": "deepseek-v4.1-flash",
   "enabled": true,
-  "wake": {"interval_minutes": 5, "min_event_gap_seconds": 60, "strategy_hours": 1},
+  "wake": {
+    "interval_minutes": 5,
+    "min_event_gap_seconds": 60,
+    "strategy_hours": 1
+  },
   "price_cooldown_minutes": 120,
-  "budget": {"tool_calls_per_wake": 12, "tokens_per_wake": 80000, "max_turns": 8, "compute_per_day": 100},
-  "mcp": {"app": {"url": "/mcp"}},
-  "company_limits": {"per_payment": 10, "per_hour": 20, "per_day": 100, "per_payee_day": 40, "auto_per_payment": 0, "auto_per_day": 0}
+  "budget": {
+    "tool_calls_per_wake": 12,
+    "tokens_per_wake": 80000,
+    "max_turns": 8,
+    "compute_per_day": 100
+  },
+  "mcp": {
+    "app": {
+      "url": "/mcp"
+    }
+  },
+  "company_limits": {
+    "per_payment": 10,
+    "per_hour": 20,
+    "per_day": 100,
+    "per_payee_day": 40,
+    "auto_per_payment": 5,
+    "auto_per_day": 100
+  }
 }

@@ -2,10 +2,12 @@ import { createVillage } from "@ambasada/village";
 import type { Env } from "../../lib/ambasada.ts";
 import { assess } from "../../lib/assessment.ts";
 import { startJob } from "../../lib/jobs.ts";
+import {reviewEvidence,type EvidenceInput} from "../../lib/evidence.ts";
 import type { JobHandler } from "./types.ts";
 type Input = { intake: Record<string, unknown>; session?: string; price?: number };
 const client = (env: unknown) => createVillage({ env: env as Record<string, unknown> });
 export const HANDLERS: Record<string, JobHandler> = {
+  "evidence-review":{async run(input,env){const d=input as {evidence:EvidenceInput;buyer:string;call_id:string};return reviewEvidence(env as unknown as Env,d.evidence,d.buyer,d.call_id);}},
   assessment: { async run(input, env) {
     const {intake,price} = input as Input;
     const result = await assess(env as unknown as Env, intake, false, price);

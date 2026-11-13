@@ -14,6 +14,9 @@ import auth from "../api/auth.ts";
 import files from "../api/files.ts";
 import notes from "../api/notes.ts";
 import assessment from "../api/assessment.ts";
+import arcade,{arcadeTicket} from "../api/arcade.ts";
+import selfTestKit from "../api/self-test-kit.ts";
+import evidenceReview from "../api/evidence-review.ts";
 import checkout from "../api/checkout.ts";
 import receipt from "../api/receipt.ts";
 import webhook from "../api/webhook.ts";
@@ -25,9 +28,12 @@ import { serverError, withRequestLog } from "../lib/errors.ts";
 
 export { Room } from "./realtime/room.ts";
 export { Jobs } from "./jobs/jobs.ts";
+export { ArcadeBank } from "./arcade-bank.ts";
 
 type Handler = (req: Request, env: Env) => Promise<Response>;
 const API: Record<string, Handler> = { checkout, receipt, webhook,
+  pig_race:arcadeTicket,road_run:arcadeTicket,mines_game:arcadeTicket,
+  self_test_kit:selfTestKit,evidence_review:evidenceReview,
   assessment_starter: assessment, assessment_standard: assessment, assessment_deep: assessment,
   assessment_standard_partner: assessment, assessment_deep_partner: assessment };
 
@@ -54,6 +60,15 @@ async function handle(req: Request, env: Env): Promise<Response> {
   const { pathname } = new URL(req.url);
   try {
     if (pathname === "/health") return Response.json({ ok: true });
+    if(pathname.startsWith('/api/arcade/'))return arcade(req,env);
+    if(req.method==="GET" && /^\/verify\/call_[a-zA-Z0-9_-]+$/.test(pathname)) {
+      const row=await env.DB.prepare("SELECT public_record FROM evidence_reviews WHERE id=?").bind(pathname.split('/').pop()).first<{public_record:string|null}>();
+      if(!row?.public_record)return new Response("No public review at this address",{status:404});
+      const data=JSON.parse(row.public_record) as Record<string,unknown>;
+      if(req.headers.get('Accept')?.includes('application/json'))return Response.json(data);
+      const esc=(v:unknown)=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+      return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Agent Checkup evidence record</title><body><main><h1>Agent Checkup</h1><h2>${esc(data.label)}</h2><p>${esc(data.provenance)}</p><dl><dt>Company</dt><dd>${esc(data.company)}</dd><dt>Version</dt><dd>${esc(data.agent_version)}</dd><dt>Date</dt><dd>${esc(data.created_at)}</dd></dl><p>Scope: ${esc((data.scope as string[]).join(', '))}</p><p>Findings: ${esc(JSON.stringify(data.counts))}</p><p>${esc(data.limitations)}</p><p>This record was published at the buyer's request. Private transcripts are not displayed.</p><a href="https://demolari.vercel.app">Agent Checkup</a></main></body></html>`,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; base-uri 'none'; frame-ancestors 'none'",'X-Content-Type-Options':'nosniff'}});
+    }
     if (pathname === "/mcp") return await mcp(req, env);
     const jobRoute = asyncJobRoute(pathname);
     if (jobRoute) return await offeringJob(jobRoute.offering, req, env);

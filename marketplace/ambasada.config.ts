@@ -1,10 +1,10 @@
 import { defineApp } from "@ambasada/sdk";
 import { defineCompany } from "@ambasada/village";
 export default defineCompany(defineApp({
-  id: "demolatorii-hackathon", name: "Agent Checkup",
-  description: "Security checkups for AI agents: evidence, boundaries, and practical fixes.",
+  id: "demolatorii-hackathon", name: "Piggy Arcade",
+  description: "Animated pig races, road crossings and Mines with event TON play credits.",
   product: { url: "http://localhost:3000" },
 }), {
-  idea: { title: "Security checkups for AI agents: test their boundaries before someone else does.", category: "data" },
+  idea: { title: "Piggy Arcade: pig races, road crossings and Mines with transparent event-credit payouts.", category: "games" },
   offerings: "./offerings.ts", agent: { dir: "./agent" },
 });

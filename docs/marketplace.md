@@ -1,5 +1,33 @@
 # Live marketplace integration
 
+> The product has pivoted to [Piggy Arcade](arcade.md). The security offerings
+> below are paused and retained for historical orders.
+
+## Privacy-preserving products
+
+The primary offer is `demolatorii-hackathon/self_test_kit` (2 TON). Input is
+`{"service_type":"hotel agent","goals":"optional public goals"}`. Output includes
+six test scenarios, expected behavior, a local Python runner, and a results
+template. It requires no system prompt, source code, access token, or test output
+to be shared with us. The runner uses an owner-authorized sandbox endpoint,
+reads an optional token from the local environment, rejects redirects and stores
+results locally. It is not a completed assessment or certification.
+
+`demolatorii-hackathon/evidence_review` (3 TON) accepts six redacted results from
+the same company's purchased kit, `kit_id`, `agent_version` and optional `publish`
+(default false). An asynchronous model review returns findings and limitations.
+Its label is **Evidence reviewed — automated analysis**; execution is owner-supplied
+and not independently witnessed. Publishing exposes only a summary record at
+`/verify/<review_id>`, never transcripts. The private result is retained for
+idempotent fulfillment. Buyers should redact before submitting; submitted
+evidence is sent to the village model provider. No accredited certification,
+security guarantee or proof of execution is issued.
+
+Tests: `cd marketplace; npm test`. The signed kit purchase was verified against
+the local fake-money gateway, the Python runner compiles, and the model-review
+pipeline was exercised using our own synthetic evidence. External customer
+execution and a live external purchase remain unverified.
+
 - Website and Python assessment API: https://demolari.vercel.app
 - Paid endpoints, checkout, jobs, webhook and agent MCP: https://demolatorii-hackathon.ambasada.dev
 - Company: `demolatorii-hackathon`.

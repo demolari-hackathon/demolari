@@ -1,150 +1,71 @@
-# Agent Checkup
+# Piggy Arcade
 
-Tiered security and reliability assessments sold through the shared agent
-marketplace. Python 3.10+, no runtime dependencies. Includes a website, JSON
-intake validation, isolated model replicas with mocked tools, and downloadable
-evidence reports. The live marketplace worker handles signed agent purchases,
-checkout, durable jobs, and private report delivery. See [live integration](docs/marketplace.md)
-for the production architecture and deployment commands. The local-only setup
-below also supports the standalone demo and operator CLI.
+Live at **https://demolari.vercel.app** — the same Vercel domain as before.
 
-## Local setup
+Three animated games using Hack A Ton **event TON play credits**:
 
-```powershell
-py -m venv .venv
-.venv\Scripts\python.exe -m pip install -e .
-.venv\Scripts\agent-checkup.exe catalog
-.venv\Scripts\agent-checkup.exe plan --target demo-agent --tier starter --budget 2 --authorization demo-owner-consent
-.venv\Scripts\python.exe scripts/dev.py
-```
+- **Piggy Derby:** four pigs race; each has 25% chance, winning return 3.8×.
+- **Hog Crossing:** survive road crossings and cash out, up to eight hops.
+- **Truffle Trouble:** a 25-tile Mines board, three mines, up to eight safe picks.
 
-Open `http://localhost:8000`. The synthetic demo works without any API keys.
-For this checkout, a portable interpreter was downloaded to ignored `.tools/`:
-`.tools/python/python.exe scripts/dev.py` also works without installation.
-It does not replace or repair the existing virtual environment.
+Free demos use the same rules locally and never transfer TON. Paid entries use
+Ambasada Checkout; payouts go to the original payer. Returns include stake,
+are rounded down to 0.01 TON, and have 95% expected return before rounding.
+There are no blockchain deposits, cash withdrawals or guaranteed profits.
 
-If an existing virtual environment points to a removed Python installation,
-recreate it with an installed Python interpreter before installing the project.
+## Architecture
 
-## Initial catalog
+- `public/`: responsive website, SVG characters and animated games.
+- `marketplace/lib/arcade-engine.ts`: seeded outcomes and payout math.
+- `marketplace/src/arcade-bank.ts`: persistent, serialized game state, treasury
+  reservations, payment verification and idempotent payout retries.
+- `marketplace/api/arcade.ts`: game API and signed marketplace play passes.
+- `marketplace/agent/`: hosted Piggy Arcade sales-agent prompt and settings.
+- `docs/arcade.md`: rules, settlement and operational details.
 
-| Tier | TON | Check scenarios |
-| --- | ---: | ---: |
-| Starter | 2 | 3 |
-| Standard | 5 | 6 |
-| Deep | 10 | 10 |
+The website remains on Vercel. The existing Ambasada backend supplies durable
+state and event-credit settlement at https://demolatorii-hackathon.ambasada.dev.
+Former assessment products are paused; their source and records are retained
+for historical orders. The Python assessment code is not used by the arcade.
 
-Prices are provisional integer credits configured in `src/agent_checkup/catalog.py`.
-Higher tiers include all lower-tier checks. A budget below the selected price
-is rejected; this is quote validation, not payment processing.
-
-## Structure
-
-- `src/agent_checkup/catalog.py`: tiers and check descriptions.
-- `src/agent_checkup/assessment.py`: request validation and offline planning.
-- `src/agent_checkup/intake.py`: bounded JSON intake contract.
-- `src/agent_checkup/runner.py`: probes, isolated sessions, conservative evaluators.
-- `src/agent_checkup/sandbox.py`: allowlisted in-memory mock tools.
-- `src/agent_checkup/provider.py`: server-side OpenAI model adapter.
-- `src/agent_checkup/reporting.py`: Markdown report generation.
-- `src/agent_checkup/integrations.py`: marketplace and target adapter contracts.
-- `src/agent_checkup/cli.py`: catalog, plan, and assessment commands.
-- `public/`: responsive website and example JSON intake.
-- `api/assess.py`: HTTP endpoint shared by local development and Vercel.
-- `prompts/consultant.md`: initial sales-agent instructions.
-- `templates/report.md`: evidence-based customer report structure.
-
-## Run an assessment
-
-Use the website's JSON editor or the CLI:
+## Develop and test
 
 ```powershell
-.venv\Scripts\agent-checkup.exe assess public/example-intake.json --output reports
+cd marketplace
+npm ci
+npm run typecheck
+npm test
+npx ambasada dev
 ```
 
-`demo` mode uses synthetic vulnerable/hardened fixtures; it does **not** assess
-the uploaded prompt. `local_replica` runs the uploaded prompt through the model
-provider with declared business rules and simulated tools. Set `test_access.mode`
-to `local_replica` and configure these environment variables in your shell:
+Generate the browser game engine from the repository root:
 
 ```powershell
-$env:OPENAI_API_KEY = '<your API key>'
-$env:ASSESSMENT_ACCESS_TOKEN = '<a long random operator token>'
-$env:ASSESSMENT_MODEL = 'gpt-4.1-mini'
+marketplace/node_modules/.bin/esbuild.cmd marketplace/lib/arcade-engine.ts --format=esm --outfile=public/arcade-engine.js --target=es2022
 ```
 
-`.env.example` documents variables; `.env` files are not automatically loaded.
-The CLI is a trusted local operator entry point; the HTTP endpoint additionally
-requires `Authorization: Bearer <ASSESSMENT_ACCESS_TOKEN>` for replica mode.
-Do not embed this token in the public frontend or give it to general customers.
-The current web interface is an operator tool with a public synthetic demo.
+Serve `public/` with a static web server. The production page calls the live
+backend. The local village mock uses fake balances for end-to-end tests.
+Keep credentials in the hosts or ignored environment files, never browser code.
 
-`GET /api/assess` returns catalog and configuration availability.
-`POST /api/assess` accepts the [example intake](public/example-intake.json) as
-`application/json` and returns `{ "report": ..., "markdown": ... }`.
-The intake is limited to 32 KB; prompt length to 12000 characters. Only the
-documented mock tool names are supported. URL targets and executable tool code
-are rejected. No real payment, refund, delivery, or external messaging occurs.
-
-Each check uses a fresh conversation and fresh sandbox, with at most two model
-requests and 400 output tokens per request. A run has a 45-second time budget;
-unrun checks are skipped, not passed. The model is server-selected, not supplied
-by customers. Actual model costs are separate from the quoted TON price.
-
-Verdicts are `finding`, `no_failure_observed`, `inconclusive`, `skipped`, or
-`error`. Capability claims currently require human review. Findings capture
-attempted sandbox actions, not proof of a production exploit. Replica behavior
-does not reproduce undisclosed middleware, memory, or infrastructure controls.
-Owner consent is recorded as a reference, not independently verified: the
-operator must verify scope before using real customer configurations.
-
-The application does not persist web reports, prompts, or access tokens. Real
-replica inputs are sent to OpenAI with `store: false`; provider retention policies
-still apply. Downloads and CLI reports can contain echoed prompt information;
-keep them private. CLI output files get unique names under ignored `reports/`.
-
-## Verification
+## Deploy
 
 ```powershell
-.venv\Scripts\python.exe scripts/check.py
-node --check public/app.js
+# Website, from repository root:
+npx vercel deploy --prod --yes --scope demolatorii
+# Backend, from marketplace/:
+npx ambasada deploy --yes
 ```
 
-The tests run without model credentials and cover intake rejection, budget
-limits, sandbox effects, provider tool loops, timeout/error verdicts, and HTTP
-authentication. Real-provider calls require a separately configured account.
+Preserve the team's live model, mode and spending settings when syncing the
+sales-agent files. Never remove or rewrite applied Durable Object migrations.
 
-## Vercel deployment
+**Current platform issue:** Cloudflare has applied migration `v3` and serves the
+arcade, but Ambasada's deploy API reports old tag `v2` versus expected `v3` on
+subsequent uploads. The platform rejects code-only recovery. Organizer support
+must reconcile that metadata before future backend updates. The live game API
+responds successfully; the final local capacity guard is not yet deployed.
 
-The repository root contains `vercel.json`. Import this Git repository into
-Vercel with framework preset **Other**, root directory **.**, no build command,
-and output directory **public**. The Python function is `api/assess.py` and
-bundles the source package. Configure the three variables above for real-model
-assessments; leave them unset for a demo-only deployment. No credentials belong
-in Git. The function requests a 60-second maximum duration.
-
-To deploy the current uncommitted working tree using the Vercel CLI:
-
-```powershell
-npx vercel login
-npx vercel deploy
-# After verifying the preview:
-npx vercel deploy --prod
-```
-
-CLI deployment requires an authenticated Vercel account. Git-based deployment
-requires committing/pushing the branch; Vercel usually treats non-production
-branches such as `bossu` as preview deployments. Do not change the production
-branch merely to publish a preview. `public/` is the only static output; customer
-configuration and reports must never be added there.
-
-## Next implementation steps
-
-1. Connect marketplace registration and trusted payment verification.
-2. Add customer authentication, verified scope records, and per-order usage limits
-   before selling access to real-model execution on the public website.
-3. Add durable private order/evidence storage and a queue for longer assessments.
-4. Add product-specific probes, human review, and fix/retest comparisons.
-
-Live websites and infrastructure scanning are outside the initial scope.
-Keep real evidence and reports private; `reports/` and `.env` are ignored.
+Browser visual QA was unavailable. Engine, TypeScript, signed fake-money
+checkout, cash-out replay and payout tests passed. The first live external
+player's payout has not been independently witnessed.

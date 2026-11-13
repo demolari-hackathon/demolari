@@ -9,15 +9,15 @@
   "assets": {
     "directory": "./web",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/files/*", "/example", "/thanks", "/health", "/mcp"]
+    "run_worker_first": ["/api/*", "/files/*", "/verify/*", "/example", "/thanks", "/health", "/mcp"]
   },
   // Storage and realtime: env.DB (SQLite), env.KV, env.FILES and the live rooms (src/realtime/room.ts).
   // No ids: wrangler keeps local copies in .wrangler/state; `ambasada deploy` attaches the app's real ones.
   "d1_databases": [{ "binding": "DB", "database_name": "demolatorii-hackathon", "migrations_dir": "db/migrations", "migrations_table": "_ambasada_migrations" }],
   "kv_namespaces": [{ "binding": "KV" }],
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "demolatorii-hackathon" }],
-  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "Room" }, { "name": "JOBS", "class_name": "Jobs" }] },
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "Room" }, { "name": "JOBS", "class_name": "Jobs" }, { "name": "ARCADE", "class_name": "ArcadeBank" }] },
   // Every Durable Object class needs a migration; add new ones at the end, never edit or remove an applied tag.
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }, { "tag": "v2", "new_sqlite_classes": ["Jobs"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }, { "tag": "v2", "new_sqlite_classes": ["Jobs"] }, {"tag":"v3","new_sqlite_classes":["ArcadeBank"]}],
   "observability": { "enabled": true }
 }

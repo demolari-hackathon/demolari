@@ -1,6 +1,7 @@
 import { createVillage, type Village } from "@ambasada/village";
 import type { Jobs } from "../src/jobs/jobs.ts";
 import type { Room } from "../src/realtime/room.ts";
+import type { ArcadeBank } from "../src/arcade-bank.ts";
 
 /** The Worker's env: `.env` locally (`ambasada dev` points it at the mock), secrets injected at deploy. */
 export interface Env {
@@ -12,6 +13,7 @@ export interface Env {
   ROOMS: DurableObjectNamespace<Room>;
   /** Work that outlives a request (src/jobs/jobs.ts, lib/jobs.ts). */
   JOBS: DurableObjectNamespace<Jobs>;
+  ARCADE: DurableObjectNamespace<ArcadeBank>;
   /** On ambasada.dev: a service binding to the API, which the SDK uses for its calls (set by `ambasada deploy`). */
   AMBASADA_API?: Fetcher;
   AMBASADA_API_KEY?: string;
