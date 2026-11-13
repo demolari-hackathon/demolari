@@ -2,11 +2,14 @@ const $ = (id) => document.getElementById(id);
 let catalog = {};
 let result = null;
 let busy = false;
+let marketplaceUrl = '';
 
 function syncMode() {
   const demo = $('mode').value === 'demo';
   $('demo-controls').hidden = !demo;
   $('token-controls').hidden = demo;
+  const price = catalog[$('tier').value]?.price;
+  $('run').textContent = demo ? 'Run free demo →' : `Continue to payment · ${price ?? '…'} TON →`;
 }
 
 async function loadExample() {
@@ -54,6 +57,7 @@ function download(content, name, type) {
 }
 
 $('mode').addEventListener('change', syncMode);
+$('tier').addEventListener('change', syncMode);
 $('load-example').addEventListener('click', () => loadExample().catch(showError));
 $('intake').addEventListener('change', () => {
   try {
@@ -90,7 +94,17 @@ $('assessment-form').addEventListener('submit', async (event) => {
     $('empty-state').hidden = true;
     $('progress').hidden = false;
     const headers = {'Content-Type': 'application/json'};
-    if (data.test_access.mode === 'local_replica') headers.Authorization = `Bearer ${$('access-token').value}`;
+    if (data.test_access.mode === 'local_replica') {
+      if (!marketplaceUrl) throw new Error('Purchases are not configured yet.');
+      const response = await fetch(`${marketplaceUrl}/api/checkout`, {method: 'POST', headers,
+        body: JSON.stringify({intake: data, tier: data.tier}), signal: AbortSignal.timeout(20000)});
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message || 'Could not create checkout.');
+      const checkoutUrl = new URL(body.url);
+      if (checkoutUrl.protocol !== 'https:' || checkoutUrl.hostname !== 'hackaton.ambasada.dev') throw new Error('Unexpected checkout address.');
+      window.location.assign(checkoutUrl.href);
+      return;
+    }
     const response = await fetch('/api/assess', {method: 'POST', headers, body: JSON.stringify(data), signal: AbortSignal.timeout(60000)});
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || 'Assessment could not run.');
@@ -112,7 +126,9 @@ $('download-markdown').addEventListener('click', () => {if (result) download(res
 async function init() {
   const response = await fetch('/api/assess');
   if (!response.ok) throw new Error('The assessment API is unavailable.');
-  catalog = (await response.json()).tiers;
+  const config = await response.json();
+  catalog = config.tiers;
+  marketplaceUrl = config.marketplace_url || '';
   const descriptions = {
     starter: 'Role overrides, protected information, and unsupported capability claims.',
     standard: 'Adds price boundaries, fabricated receipts, and refund handling.',
@@ -128,11 +144,44 @@ async function init() {
     button.type = 'button';
     button.addEventListener('click', () => {
       $('tier').value = tier.id;
+      $('mode').value = 'local_replica';
+      syncMode();
       $('workspace').scrollIntoView({behavior: 'smooth'});
     });
     card.append(top, price, element('p', descriptions[tier.id]), button);
     return card;
   }));
   await loadExample();
+  await resumeOrder();
+}
+
+async function resumeOrder() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const order = params.get('order'), access = params.get('access');
+  if (!order || !access || !marketplaceUrl) return;
+  $('workspace').scrollIntoView();
+  $('empty-state').hidden = true;
+  $('progress').hidden = false;
+  $('run-status').textContent = 'WORKING';
+  $('progress').textContent = 'Verifying payment and preparing your assessment… Keep this private report link to return later.';
+  busy = true;
+  $('run').disabled = true;
+  try {
+    for (let attempt = 0; attempt < 65; attempt++) {
+      const response = await fetch(`${marketplaceUrl}/api/receipt?order=${encodeURIComponent(order)}`, {
+        headers: {Authorization: `Bearer ${access}`}, signal: AbortSignal.timeout(15000)});
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message || 'Could not read your order.');
+      if (body.status === 'delivered') { result = body; renderReport(body); return; }
+      if (body.status === 'failed') throw new Error(body.error);
+      if (body.status === 'unpaid') throw new Error('This order is not paid. No assessment has been unlocked.');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    throw new Error('The report is still processing. Keep this private URL and reload to check again.');
+  } finally {
+    busy = false;
+    $('run').disabled = false;
+    $('progress').hidden = true;
+  }
 }
 init().catch(showError);

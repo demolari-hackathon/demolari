@@ -1,0 +1,8 @@
+{
+  "template": "worker",
+  "devkit": "0.8.26",
+  "addons": [
+    "village"
+  ],
+  "live_url": "https://demolatorii-hackathon.ambasada.dev"
+}

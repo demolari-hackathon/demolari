@@ -7,6 +7,7 @@ tests
 scripts
 prompts
 templates
+marketplace
 .env
 .env.*
 **/__pycache__

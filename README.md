@@ -3,7 +3,10 @@
 Tiered security and reliability assessments sold through the shared agent
 marketplace. Python 3.10+, no runtime dependencies. Includes a website, JSON
 intake validation, isolated model replicas with mocked tools, and downloadable
-evidence reports. Marketplace payments and registration are not integrated yet.
+evidence reports. The live marketplace worker handles signed agent purchases,
+checkout, durable jobs, and private report delivery. See [live integration](docs/marketplace.md)
+for the production architecture and deployment commands. The local-only setup
+below also supports the standalone demo and operator CLI.
 
 ## Local setup
 

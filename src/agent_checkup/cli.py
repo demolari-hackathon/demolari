@@ -8,7 +8,7 @@ from pathlib import Path
 from .assessment import AssessmentRequest, create_plan
 from .catalog import TIERS
 from .intake import parse_intake
-from .provider import OpenAIProvider, ProviderError
+from .provider import create_provider, ProviderError
 from .reporting import markdown_report
 from .runner import run_assessment
 
@@ -38,7 +38,7 @@ def main() -> None:
             if args.intake.stat().st_size > 32768:
                 raise ValueError("Intake exceeds 32 KB")
             intake = parse_intake(json.loads(args.intake.read_text(encoding="utf-8")))
-            provider = OpenAIProvider() if intake.mode == "local_replica" else None
+            provider = create_provider() if intake.mode == "local_replica" else None
             result = run_assessment(intake, provider)
             args.output.mkdir(parents=True, exist_ok=True)
             # Unique names prevent overwriting earlier private reports.

@@ -17,7 +17,7 @@ class Intake:
     demo_profile: str
 
 
-def parse_intake(data: dict) -> Intake:
+def parse_intake(data: dict, quoted_price: int | None = None) -> Intake:
     if not isinstance(data, dict):
         raise ValueError("Intake must be a JSON object")
     if set(data) - {"schema_version", "agent_id", "tier", "budget", "authorization_reference", "configuration", "test_access"}:
@@ -29,7 +29,7 @@ def parse_intake(data: dict) -> Intake:
             raise ValueError(f"{key} must be a nonempty string (at most 200 characters)")
     if type(data.get("budget")) is not int or data["budget"] < 0:
         raise ValueError("budget must be a nonnegative integer")
-    request = AssessmentRequest(data["agent_id"], data["tier"], data["budget"], data["authorization_reference"])
+    request = AssessmentRequest(data["agent_id"], data["tier"], data["budget"], data["authorization_reference"], quoted_price)
     create_plan(request)
     config = data.get("configuration")
     access = data.get("test_access")

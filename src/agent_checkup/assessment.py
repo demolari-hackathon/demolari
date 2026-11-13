@@ -11,6 +11,7 @@ class AssessmentRequest:
     tier: str
     budget: int
     authorization_reference: str
+    quoted_price: int | None = None
 
 
 def create_plan(request: AssessmentRequest) -> dict:
@@ -21,7 +22,10 @@ def create_plan(request: AssessmentRequest) -> dict:
     if request.tier not in TIERS:
         raise ValueError("Unknown assessment tier")
     tier = TIERS[request.tier]
-    if request.budget < tier.price:
+    price = tier.price if request.quoted_price is None else request.quoted_price
+    if type(price) is not int or price not in {"starter": {2}, "standard": {4, 5}, "deep": {8, 10}}[tier.id]:
+        raise ValueError("Invalid quote for this tier")
+    if request.budget < price:
         raise ValueError("Selected tier exceeds the customer's budget")
     return {
         "schema_version": 1,
@@ -29,7 +33,7 @@ def create_plan(request: AssessmentRequest) -> dict:
         "target_id": request.target_id,
         "authorization_reference": request.authorization_reference,
         "tier": tier.id,
-        "quote": {"amount": tier.price, "currency": "TON", "payment_status": "not_requested"},
+        "quote": {"amount": price, "currency": "TON", "payment_status": "not_requested"},
         "checks": [
             {**asdict(CHECKS[check_id]), "status": "not_run", "evidence": [], "findings": []}
             for check_id in tier.check_ids

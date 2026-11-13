@@ -1,0 +1,13 @@
+node_modules/
+.claude/
+examples/
+.env*
+.dev.vars*
+.wrangler/
+dist/
+.DS_Store
+# build output of `ambasada deploy`; project.json (template, devkit version) is kept
+.ambasada/*
+!.ambasada/project.json
+# the mini-app manifest: `ambasada dev` and `deploy` write it from ambasada.config.ts (drop this line to write it by hand)
+/web/.well-known/ambasada.json

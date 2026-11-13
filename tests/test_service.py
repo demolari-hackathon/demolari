@@ -16,6 +16,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 from api.assess import handler
 from agent_checkup.intake import parse_intake
 from agent_checkup.provider import ProviderError
+from agent_checkup.provider import VillageProvider
 from agent_checkup.reporting import markdown_report
 from agent_checkup.runner import run_assessment
 from agent_checkup.sandbox import Sandbox
@@ -26,6 +27,16 @@ def example():
 
 
 class ServiceTests(unittest.TestCase):
+    def test_partner_price_preserves_customer_budget(self):
+        data = example()
+        data["budget"] = 4
+        with self.assertRaises(ValueError):
+            parse_intake(data)
+        plan = run_assessment(parse_intake(data, quoted_price=4))
+        self.assertEqual(plan["quote"]["amount"], 4)
+        with self.assertRaises(ValueError):
+            parse_intake(data, quoted_price=1)
+
     def test_budget_and_authorization(self):
         for key, value in (("budget", 1), ("budget", True), ("authorization_reference", " "), ("tier", "unknown")):
             with self.subTest(key=key, value=value):
@@ -108,6 +119,19 @@ class ServiceTests(unittest.TestCase):
 
 
 class HTTPTests(unittest.TestCase):
+    def test_partner_quote_requires_backend_auth(self):
+        data = example()
+        data["budget"] = 4
+        headers = {"Content-Type": "application/json", "X-Assessment-Price": "4"}
+        url = self.url + "/api/assess?validate=1"
+        with patch.dict(os.environ, {"ASSESSMENT_ACCESS_TOKEN": "test-token"}):
+            with self.assertRaises(HTTPError) as error:
+                urlopen(Request(url, data=json.dumps(data).encode(), headers=headers))
+            self.assertEqual(error.exception.code, 401)
+            headers["Authorization"] = "Bearer test-token"
+            with urlopen(Request(url, data=json.dumps(data).encode(), headers=headers)) as response:
+                self.assertEqual(json.load(response)["plan"]["quote"]["amount"], 4)
+
     @classmethod
     def setUpClass(cls):
         cls.server = ThreadingHTTPServer(("127.0.0.1", 0), handler)

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pay with TON: an example</title>
+    <!-- "Pay with TON" for any page: src/worker.ts points this at your village (https://hackaton.ambasada.id/pay.js, or the mock). -->
+    <script data-pay-js src="https://hackaton.ambasada.id/pay.js" defer></script>
+  </head>
+  <body>
+    <!-- /example: the village's paid example, unstyled. People pay you TON two ways: Checkout (the form: api/checkout.ts
+         creates the session, the person approves on the village, /thanks delivers) and a pay.js button with a payment
+         link. Agents buy the same work as the `translate` offering (offerings.ts, api/translate.ts). Take what you need
+         into your own pages, then delete this file and its route in src/worker.ts. -->
+    <main>
+      <h1>Pay with TON: an example</h1>
+      <p>A translation for 10 TON. Romanian, English, German, French.</p>
+
+      <!-- 1. Checkout: api/checkout.ts creates the session, the person approves on the village, /thanks delivers. -->
+      <form method="post" action="/api/checkout">
+        <p><textarea name="text" rows="4" cols="40" maxlength="500" required placeholder="Bună! Vrei să bem o cafea după hackathon?"></textarea></p>
+        <p>
+          <label>
+            to
+            <select name="to">
+              <option value="en">English</option>
+              <option value="ro">Romanian</option>
+              <option value="de">German</option>
+              <option value="fr">French</option>
+            </select>
+          </label>
+          <button type="submit">Pay with TON · 10 TON</button>
+        </p>
+      </form>
+
+      <!-- 2. pay.js with a payment link: `ambasada links create --amount 5 …`, then AMBASADA_PAYMENT_LINK=pl_… -->
+      <h2>A pay.js button</h2>
+      <button data-village-pay="" data-ref="tip" data-mode="popup">Pay with TON · 5 TON</button>
+      <p data-no-link>Set <code>AMBASADA_PAYMENT_LINK</code> to a payment link to turn on this button.</p>
+      <p id="paid" hidden>Mulțumim! Thank you!</p>
+
+      <p>Agents: buy <code>demolatorii-hackathon/translate</code> through the village Gateway.</p>
+    </main>
+    <script>
+      // pay.js fires village:paid on the button (popup mode) or on document (back from the approve page).
+      document.addEventListener("village:paid", async (e) => {
+        // e.detail.receipt is a signed checkout receipt: let the server check it before trusting it.
+        const res = await fetch("/api/receipt", { method: "POST", body: JSON.stringify({ receipt: e.detail.receipt }) });
+        if (res.ok) document.getElementById("paid").hidden = false;
+      });
+    </script>
+  </body>
+</html>
