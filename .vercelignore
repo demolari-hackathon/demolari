@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.tools
+reports
+tests
+scripts
+prompts
+templates
+.env
+.env.*
+**/__pycache__
+**/*.pyc
+**/*.egg-info

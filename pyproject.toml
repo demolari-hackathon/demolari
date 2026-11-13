@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-checkup"
+version = "0.1.0"
+description = "Tiered security assessment service for marketplace agents"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+agent-checkup = "agent_checkup.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
