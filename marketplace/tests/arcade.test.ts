@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {activate,makeGame,outcomes,play,publicGame,payoutFor,sha256,type GameName} from '../lib/arcade-engine.ts';
+import {activate,makeGame,outcomes,play,publicGame,payoutFor,sha256,RULES,type GameName} from '../lib/arcade-engine.ts';
 const fixture=async(game:GameName)=>makeGame({id:'fixture',game,stake:100,access_hash:'secret-hash',client_seed:'client_fixture',pig:0});
 test('commitment reproduces all outcomes and hides unpaid/active secrets',async()=>{
   const g=await fixture('mines');
@@ -36,7 +36,7 @@ test('eight safe moves stop the round and max return covers every cashout',async
   }
 });
 test('fixed-stop expected return never exceeds 95% after rounding',()=>{
-  for(let k=1;k<=8;k++)for(const stake of [50,100]){
+  for(let k=1;k<=8;k++)for(const stake of RULES.stakes){
     assert.ok(Math.pow(.8,k)*payoutFor('road',stake,k)<=stake*.95+1e-8);
     let survival=1;for(let i=0;i<k;i++)survival*=(22-i)/(25-i);
     assert.ok(survival*payoutFor('mines',stake,k)<=stake*.95+1e-8);
@@ -45,4 +45,17 @@ test('fixed-stop expected return never exceeds 95% after rounding',()=>{
 test('unsupported stakes and invalid selections are refused',async()=>{
   await assert.rejects(()=>makeGame({id:'bad',game:'pigs',stake:10000,access_hash:'x',client_seed:'fixture_seed'}));
   await assert.rejects(()=>makeGame({id:'bad',game:'pigs',stake:100,access_hash:'x',client_seed:'fixture_seed',pig:9}));
+});
+
+test('every supported stake reserves the full maximum return and settles larger games in cents',async()=>{
+  for(const game of ['pigs','road','mines'] as const)for(const stake of RULES.stakes){
+    const g=await makeGame({id:'larger',game,stake,access_hash:'x',client_seed:'larger_stake_seed'});
+    assert.equal(g.max_payout,payoutFor(game,stake,game==='pigs'?1:8));
+    assert.equal(publicGame(g).stake,stake/100);
+    g.winner=g.pig;g.hazards=Array(8).fill(false);g.bombs=[22,23,24];activate(g,'payer',1000);
+    if(game==='pigs')play(g,'finish',undefined,9000);
+    else for(let i=0;i<8;i++)play(g,game==='road'?'hop':'reveal',i);
+    assert.equal(g.payout,g.max_payout);assert.equal(g.settlement,'pending');
+    assert.ok(Number.isInteger(g.payout));
+  }
 });

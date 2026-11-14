@@ -1,6 +1,6 @@
 /** Pure event-credit game rules. Currency is integer hundredths of TON. */
 export type GameName='pigs'|'road'|'mines';
-export const RULES={house_return:0.95,road_survival:0.8,max_steps:8,mines:3,tiles:25,race_ms:8000,stakes:[50,100]};
+export const RULES={house_return:0.95,road_survival:0.8,max_steps:8,mines:3,tiles:25,race_ms:8000,stakes:[50,100,200,500,1000]};
 export class GameError extends Error {status:number;constructor(message:string,status=400){super(message);this.status=status;}}
 export interface Game {
   id:string;game:GameName;stake:number;status:'awaiting_payment'|'active'|'won'|'lost'|'cashed_out'|'refunded';
@@ -31,7 +31,7 @@ export async function outcomes(seed:string,client_seed:string){
   return {winner,hazards,bombs:cells.slice(0,3).sort((a,b)=>a-b)};
 }
 export async function makeGame(input:{id:string;game:GameName;stake:number;access_hash:string;pig?:number;client_seed:string;nickname?:string;public_score?:boolean},now=Date.now()):Promise<Game>{
-  if(!['pigs','road','mines'].includes(input.game)||!RULES.stakes.includes(input.stake))throw new GameError('Choose a supported game and a 0.5 or 1 TON stake');
+  if(!['pigs','road','mines'].includes(input.game)||!RULES.stakes.includes(input.stake))throw new GameError('Choose a supported game and a 0.5, 1, 2, 5 or 10 TON stake');
   if(input.pig!==undefined&&(!Number.isInteger(input.pig)||input.pig<0||input.pig>3))throw new GameError('Choose pig 1–4');
   if(typeof input.client_seed!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(input.client_seed))throw new GameError('A client seed of 8–80 letters or digits is required');
   const seed=randomSeed();

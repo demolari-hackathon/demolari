@@ -1,6 +1,7 @@
 import {makeGame,activate,play,publicGame,randomSeed,payoutFor,RULES} from './arcade-engine.js';
 const $=id=>document.getElementById(id);
 const API='https://demolatorii-hackathon.ambasada.dev';
+const DISCONNECTED=true;
 const pigs=[{name:'Rosie',color:'#efa1b0',dark:'#d17b94'},{name:'Waffles',color:'#e8c36f',dark:'#c59c4c'},{name:'Pickles',color:'#a8bd88',dark:'#819d62'},{name:'Blueberry',color:'#a8becf',dark:'#7a9fb8'}];
 let selected='pigs',pig=0,stake=1,round=null,credentials=null,demo=false,demoGame=null,busy=false,config=null;
 let raceFrame=null,pollTimer=null,audio=null,sound=false,lastRaceId=null;
@@ -8,12 +9,15 @@ const money=n=>Number(n||0).toFixed(2);
 const terminal=()=>round&&!['active','awaiting_payment'].includes(round.status);
 function pigSVG(index=0){const p=pigs[index];return `<svg viewBox="0 0 110 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M19 43C5 31 5 53 16 48" fill="none" stroke="${p.dark}" stroke-width="4" stroke-linecap="round"/><path d="M29 58v12m17-12v12m30-13v12m15-16v12" stroke="${p.dark}" stroke-width="8" stroke-linecap="round"/><ellipse cx="55" cy="44" rx="37" ry="25" fill="${p.color}"/><path d="m68 23 4-19 18 18" fill="${p.dark}"/><ellipse cx="83" cy="38" rx="23" ry="24" fill="${p.color}"/><path d="m86 21 9-13 5 18" fill="${p.dark}"/><ellipse cx="96" cy="46" rx="14" ry="10" fill="${p.dark}"/><circle cx="92" cy="45" r="2" fill="#3d443a"/><circle cx="101" cy="45" r="2" fill="#3d443a"/><circle cx="87" cy="32" r="3" fill="#293d32"/><path d="M80 39q4 3 8 0" fill="none" stroke="${p.dark}" stroke-width="2"/><ellipse cx="43" cy="32" rx="12" ry="5" fill="#fff" opacity=".12"/></svg>`;}
 $('brand-pig').innerHTML=pigSVG(0);
+document.querySelector('[data-game="pigs"] .tab-art').innerHTML=pigSVG(0);
 $('road-player').innerHTML=pigSVG(0);
+document.querySelector('.stake-options').innerHTML=RULES.stakes.map(cents=>`<button data-stake="${cents/100}"${cents===100?' class="selected"':''}>${cents/100} <small>TON</small></button>`).join('');
 function buildScenes(){
   $('track').innerHTML=pigs.map((p,i)=>`<div class="lane"><span class="lane-number">0${i+1}</span><div class="runner ${i===pig?'selected':''}" id="runner-${i}">${pigSVG(i)}</div></div>`).join('');
   $('pig-picker').innerHTML=pigs.map((p,i)=>`<button class="pig-pick ${i===pig?'selected':''}" data-pig="${i}" aria-label="Choose ${p.name}" aria-pressed="${i===pig}">${pigSVG(i)}${p.name}</button>`).join('');
   document.querySelectorAll('[data-pig]').forEach(b=>b.addEventListener('click',()=>{if(round&&!terminal())return;pig=Number(b.dataset.pig);buildScenes();renderControls();}));
-  $('road-board').innerHTML='<div class="road-row grass"></div>'+Array.from({length:8},(_,i)=>`<div class="road-row"><span class="car"></span>${i%2===0?'<span class="car second"></span>':''}</div>`).join('');
+  $('road-board').innerHTML='<div class="road-row grass"></div>'+Array.from({length:8},()=>'<div class="road-row"><span class="car"></span></div>').join('');
+  $('road-player').classList.remove('hit');
   $('mine-grid').replaceChildren(...Array.from({length:25},(_,i)=>{const b=document.createElement('button');b.className='mine-tile';b.textContent='·';b.setAttribute('aria-label',`Reveal tile ${i+1}`);b.addEventListener('click',()=>act('reveal',i));return b;}));
 }
 const descriptions={
@@ -35,14 +39,14 @@ function beep(win=false){if(!sound)return;try{audio??=new (window.AudioContext||
 function renderControls(){
   const active=round?.status==='active',pending=round?.status==='awaiting_payment',end=terminal();
   $('pig-picker').hidden=selected!=='pigs';$('nickname-section').hidden=!!round&&!end;
-  document.querySelectorAll('[data-stake]').forEach(b=>{b.classList.toggle('selected',Number(b.dataset.stake)===stake);b.disabled=!!round&&!end;});
+  document.querySelectorAll('[data-stake]').forEach(b=>{const supported=config?.rules?.stakes?.includes(Number(b.dataset.stake)*100)??Number(b.dataset.stake)<=1;b.classList.toggle('selected',Number(b.dataset.stake)===stake);b.disabled=busy||(!!round&&!end)||!supported;b.title=supported?'':'This stake is not available on the paid service yet';});
   document.querySelectorAll('[data-pig]').forEach(b=>b.disabled=!!round&&!end);
   const steps=round?.steps??0,ret=selected==='pigs'?stake*3.8:round?.cashout||payoutFor(selected,Math.round(stake*100),1)/100;
   $('payout-label').textContent=selected==='pigs'?'Return if your pig wins':steps?'Available to cash out':'Return after first safe move';
   $('payout').replaceChildren(document.createTextNode(`${money(ret)} `));const small=document.createElement('small');small.textContent='TON';$('payout').append(small);
   $('multiplier').textContent=`${(ret/stake).toFixed(2)}×`;
   $('mode-tag').classList.toggle('demo',demo);$('mode-tag').textContent=demo?'FREE DEMO · NO TON':active?'PAID ROUND':end?'ROUND COMPLETE':pending?'AWAITING PAYMENT':'READY WHEN YOU ARE';
-  $('play-button').disabled=busy||pending||(active&&selected!=='road');
+  $('play-button').disabled=(DISCONNECTED&&!demo)||busy||pending||(active&&selected!=='road');
   if(active&&selected==='road')$('play-button').textContent=`Hop ${steps+1} / 8 →`;
   else if(active)$('play-button').textContent=selected==='pigs'?'And they’re off…':'Pick a tile on the board ←';
   else $('play-button').textContent=`${end?'Play again':selected==='pigs'?'Race':'Play'} for ${stake} TON →`;
@@ -58,6 +62,10 @@ function renderControls(){
   $('safe-count').textContent=`${steps} / 8 safe picks`;
   const rowHeight=$('road-board').querySelector('.road-row:not(.grass)')?.getBoundingClientRect().height||44;
   $('road-player').style.bottom=`${42+Math.min(steps,8)*rowHeight}px`;$('road-player').classList.toggle('hit',round?.status==='lost');
+  if(selected==='road'&&round?.status==='lost'){
+    const lane=$('road-board').children[steps],car=lane?.querySelector('.car');
+    if(car){car.style.left=`${($('road-board').clientWidth-car.offsetWidth)/2}px`;lane.classList.add('collision-lane');}
+  }
   $('stage-result').hidden=!end;
   if(end){
     const won=round.payout>0;
@@ -70,10 +78,12 @@ function renderControls(){
   $('proof-content').textContent=round?JSON.stringify({mode:demo?'demo':'paid',...round},null,2):'Start a round to see its details.';
 }
 async function request(path,options={}){
+  if(DISCONNECTED)throw new Error('Ambasada integration has been disconnected. Free demos remain available.');
   const response=await fetch(`${API}${path}`,{...options,signal:AbortSignal.timeout(20000)});
   const data=await response.json();if(!response.ok)throw new Error(data.error?.message||'The game service could not complete that request.');return data;
 }
 async function startPaid(){
+  if(DISCONNECTED&&!(demo&&round?.status==='active'&&selected==='road'))return showError('Paid services are closed. The Ambasada integration has been disconnected.');
   if(busy)return;
   if(round?.status==='active')return selected==='road'?act('hop'):undefined;
   if(round?.settlement==='pending')return showError('Your payout is pending. Refresh its status before starting a new round.');
@@ -89,6 +99,27 @@ async function startDemo(){
   credentials=null;demo=true;demoGame=await makeGame({id:`demo_${crypto.randomUUID()}`,game:selected,stake:Math.round(stake*100),access_hash:'demo',pig,client_seed:randomSeed()});
   activate(demoGame,'demo');round=publicGame(demoGame);lastRaceId=null;$('error').hidden=true;buildScenes();renderControls();if(selected==='pigs')runRace();beep();
 }
+async function animateRoadHop(next){
+  const player=$('road-player'),board=$('road-board'),lane=board.children[next.steps];
+  if(!lane)return;
+  const car=lane.querySelector('.car'),height=lane.getBoundingClientRect().height;
+  const from=42+(next.steps-1)*height,to=42+next.steps*height;
+  const width=board.getBoundingClientRect().width,carWidth=car.getBoundingClientRect().width;
+  const collision=(width-carWidth)/2,lost=next.status==='lost';
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('stage-status').textContent='Crossing…';
+  // Cars are staged from the authoritative result, never independent looping scenery.
+  const traffic=car.animate([{left:'-90px'},{left:`${lost?collision:width+90}px`}],{duration:reduced?1:lost?500:480,easing:'linear',fill:'forwards'});
+  if(!lost)await traffic.finished;
+  const hop=player.animate([{bottom:`${from}px`},{bottom:`${to}px`}],{duration:reduced?1:lost?480:340,easing:'ease-out',fill:'forwards'});
+  await Promise.all([traffic.finished,hop.finished]);
+  player.style.bottom=`${to}px`;hop.cancel();
+  if(lost){
+    player.classList.add('hit');lane.classList.add('collision-lane');
+    $('stage-status').textContent='Collision! Your pig was hit on this crossing.';
+    await player.animate([{opacity:1},{opacity:.45},{opacity:1}],{duration:reduced?1:320}).finished;
+  }
+}
 async function act(action,cell){
   if(busy||round?.status!=='active')return;
   busy=true;$('error').hidden=true;renderControls();
@@ -97,12 +128,14 @@ async function act(action,cell){
     else{
       const d=await request('/api/arcade/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...credentials,action,cell,revision:round.revision,request_id:crypto.randomUUID()})});round=d.round;
     }
+    if(action==='hop'&&selected==='road')await animateRoadHop(round);
     beep(terminal()&&round.payout>0);if(terminal())refreshFeed();
   }catch(e){showError(e.message);if(!demo)await fetchRound().catch(()=>{});}finally{busy=false;renderControls();}
 }
 async function fetchRound(){
-  if(!credentials)return;
+  if(!credentials||busy)return;
   const d=await request(`/api/arcade/state?id=${encodeURIComponent(credentials.id)}`,{headers:{Authorization:`Bearer ${credentials.access}`}});
+  if(busy||d.round.revision<(round?.revision??0))return;
   round=d.round;renderControls();
   if(selected==='pigs'&&lastRaceId!==round.id)runRace();
   if(terminal()&&round.settlement!=='pending'){clearInterval(pollTimer);refreshFeed();}
@@ -134,6 +167,7 @@ async function refreshFeed(){try{
   $('total-rounds').textContent=feed.rounds;$('total-payouts').textContent=money(feed.payouts);
 }catch{/* Keep a quiet empty state until real data is available. */}}
 async function init(){
+  if(DISCONNECTED){buildScenes();chooseGame('pigs',false);$('service-status').textContent='Ambasada disconnected · free demos only';$('payment-note').textContent='Paid services are closed. No account connection or payment is required for free demos.';renderControls();return;}
   const hash=new URLSearchParams(location.hash.slice(1));
   busy=!!(hash.get('round')&&hash.get('access'));
   buildScenes();chooseGame('pigs',false);
@@ -151,12 +185,12 @@ async function init(){
   }
   busy=false;renderControls();refreshFeed();
 }
-document.querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>chooseGame(b.dataset.game)));
+document.querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{if(!busy)chooseGame(b.dataset.game);}));
 document.querySelectorAll('[data-stake]').forEach(b=>b.addEventListener('click',()=>{if(round&&!terminal())return;stake=Number(b.dataset.stake);renderControls();}));
 $('play-button').addEventListener('click',startPaid);$('demo-button').addEventListener('click',startDemo);$('cashout-button').addEventListener('click',()=>act('cashout'));
 $('sound').addEventListener('click',()=>{sound=!sound;$('sound').textContent=sound?'♫ on':'♫ off';$('sound').setAttribute('aria-pressed',String(sound));beep();});
 ['rules-link','footer-rules'].forEach(id=>$(id).addEventListener('click',()=>$('rules-dialog').showModal()));
 $('proof-button').addEventListener('click',()=>$('proof-dialog').showModal());document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).close()));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&credentials)fetchRound().catch(()=>{});});
-window.addEventListener('resize',()=>{renderControls();if(round?.game==='pigs')runRace();});
+window.addEventListener('resize',()=>{if(busy)return;renderControls();if(round?.game==='pigs')runRace();});
 init().catch(e=>showError(e.message));

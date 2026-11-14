@@ -1,0 +1,7 @@
+{
+  "name": "demolari-web",
+  "private": true,
+  "type": "module",
+  "engines": {"node": "22.x"},
+  "dependencies": {"@ambasada/village": "0.8.26"}
+}

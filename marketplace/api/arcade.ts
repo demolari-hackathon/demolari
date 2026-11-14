@@ -32,4 +32,4 @@ export async function arcadeTicket(req:Request,env:Env):Promise<Response>{
     if(!res.ok)throw new Error(body.error?.message??'Game unavailable');
     return {play_url:`https://demolari.vercel.app/#round=${id}&access=${access}`,round:body.round,rules:'A funded play pass, not a guaranteed win. TON is event play currency.'};
   })(req);}catch(e){if(isVillageError(e))return e.toResponse();throw e;}
-}
+} 

@@ -1,4 +1,4 @@
-const RULES = { house_return: 0.95, road_survival: 0.8, max_steps: 8, mines: 3, tiles: 25, race_ms: 8e3, stakes: [50, 100] };
+const RULES = { house_return: 0.95, road_survival: 0.8, max_steps: 8, mines: 3, tiles: 25, race_ms: 8e3, stakes: [50, 100, 200, 500, 1e3] };
 class GameError extends Error {
   status;
   constructor(message, status = 400) {
@@ -35,7 +35,7 @@ async function outcomes(seed, client_seed) {
   return { winner, hazards, bombs: cells.slice(0, 3).sort((a, b) => a - b) };
 }
 async function makeGame(input, now = Date.now()) {
-  if (!["pigs", "road", "mines"].includes(input.game) || !RULES.stakes.includes(input.stake)) throw new GameError("Choose a supported game and a 0.5 or 1 TON stake");
+  if (!["pigs", "road", "mines"].includes(input.game) || !RULES.stakes.includes(input.stake)) throw new GameError("Choose a supported game and a 0.5, 1, 2, 5 or 10 TON stake");
   if (input.pig !== void 0 && (!Number.isInteger(input.pig) || input.pig < 0 || input.pig > 3)) throw new GameError("Choose pig 1\u20134");
   if (typeof input.client_seed !== "string" || !/^[a-zA-Z0-9_-]{8,80}$/.test(input.client_seed)) throw new GameError("A client seed of 8\u201380 letters or digits is required");
   const seed = randomSeed();

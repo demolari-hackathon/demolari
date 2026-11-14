@@ -33,6 +33,25 @@ Mines play requires opening the browser URL; do not imply a chat message plays i
 
 ## Sales routine
 
+## Additional village services
+
+We also sell three digital village services, fulfilled directly on Vercel:
+- demolatorii-hackathon/beach_chair: 2 TON. Optional {name}. A personalized virtual
+  beach-chair SVG and hosted ownership page, not a physical chair or reservation.
+- demolatorii-hackathon/market_stall: 3 TON. Optional {name,products:[{name,
+  description?,price?,url?}]}. Public digital shop and directory listing, maximum
+  10 products, hosted for the event. No physical table or guaranteed buyers.
+- demolatorii-hackathon/product_storage: 2 TON. Same optional product input.
+  Private 10-record / 8 KB JSON product catalog, hosted for the event. Returns
+  an access token, URL and authenticated GET/PUT instructions. No files, physical
+  warehousing or secrets. Keep the token private. Recommend a separate backup.
+Details: https://demolari.vercel.app/village.html. These deliver useful results
+directly to agents; no browser play is required. Prefer a relevant catalog or
+storefront offer for teams seeking product organization. Do not claim the chair
+earns income or that a stall has an established audience. Never invent sales.
+Use current platform spending limits; old notes about a blanket no-spend rule
+do not override the team's permission to make useful purchases within limits.
+
 Read the supplied wallet, shop, inbox and approvals first. Respond to the team
 and interested customers accurately. One concise, relevant introduction is enough:
 "We built Piggy Arcade: animated pig races, road crossings and Mines. Try a free

@@ -1,5 +1,21 @@
 # Piggy Arcade
 
+**Integration disconnected on 14 November 2026.** All marketplace offerings are
+paused, both Codex grants and the CLI authorization were revoked, and the local
+MCP configuration was removed. The app's custom secrets were removed from
+Ambasada. Vercel's Ambasada key and URL were removed; the internal assessment
+secret was replaced with a new Vercel-only secret. The production website runs
+local demos only and paid Vercel endpoints return 410. No unrelated provider
+credentials or browser login sessions were removed. The source below is retained
+as an archive; do not reconnect or redeploy the marketplace without authorization.
+
+The hosted agent is platform-enforced `always_on`; its tool list was cleared and
+its prompt replaced with a withdrawal of authorization. Final company server-key
+rotation must be performed by the signed-in user under My team → More → For
+developers → Server key → New key. That rotates the old server key immediately;
+do not share the replacement with this project. Named developer sessions can be
+revoked separately via their Log out → Tap to confirm controls.
+
 Live at **https://demolari.vercel.app** — the same Vercel domain as before.
 
 Three animated games using Hack A Ton **event TON play credits**:

@@ -22,6 +22,16 @@ Website entries are 0.5 or 1 TON. Marketplace passes cost 1 TON and return a
 private browser play URL, not an immediate win. Legacy security offerings are
 paused; their routes/data remain to support past orders.
 
+The updated engine supports 2, 5 and 10 TON entries as well. These remain disabled
+in the website unless the live backend advertises them in `/api/arcade/config`.
+Their backend deployment is currently blocked by the platform migration-tag
+mismatch described below. Every larger entry retains the full maximum-return
+reservation check; marketplace passes remain 1 TON.
+
+Hog Crossing animates each authoritative hop outcome. Safe hops follow a car
+passing; losing hops end in a visible car collision before showing the result.
+This animation does not make click timing a skill input or change the odds.
+
 ## Money and state
 
 `ArcadeBank` is a single persistent Durable Object (`ARCADE`, migration v3).

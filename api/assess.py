@@ -38,6 +38,8 @@ class handler(SimpleHTTPRequestHandler):
         self.wfile.write(payload)
 
     def do_GET(self):
+        if os.environ.get("VERCEL") and not os.environ.get("AMBASADA_API_KEY"):
+            return self._json(410, {"error": "Ambasada integration disconnected"})
         if self.path.split("?")[0] == "/api/assess":
             self._json(200, {"tiers": {k: asdict(v) for k, v in TIERS.items()},
                              "replica_configured": bool(model_configured() and os.environ.get("ASSESSMENT_ACCESS_TOKEN")),
@@ -48,6 +50,8 @@ class handler(SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
+        if os.environ.get("VERCEL") and not os.environ.get("AMBASADA_API_KEY"):
+            return self._json(410, {"error": "Ambasada integration disconnected"})
         if self.path.split("?")[0] != "/api/assess":
             return self._json(404, {"error": "Not found"})
         if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
